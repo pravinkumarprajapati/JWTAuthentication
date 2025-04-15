@@ -17,13 +17,26 @@ namespace JWTAuthentication.Controllers
         private readonly IConfiguration _configuration = configuration;
 
         [HttpPost]
+        [Route("forgotpassword")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordModel model)
+        {
+            var user = await _userManager.FindByEmailAsync(model.Email);
+            if (user == null || !( await _userManager.IsEmailConfirmedAsync(user) ))
+            {
+                return BadRequest(new Response { Status = "Error", Message = "User does not exist!" });
+            }
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            return Ok(new Response { Status = "Success", Message = token });
+        }
+
+        [HttpPost]
         [Route("login")]
         public async Task<IActionResult> Login([FromBody] LoginModel model)
         {
             var loggingUser = await _userManager.FindByNameAsync(model.Username);
             if (loggingUser != null && await _userManager.CheckPasswordAsync(loggingUser, model.Password))
             {
-                var userRoles = await _userManager.GetRolesAsync(loggingUser);
+                var userRoles = await _userManager.GetRolesAsync(loggingUser);                
                 var authClaims = new List<Claim>
                 {
                      new(ClaimTypes.Name, model.Username),
